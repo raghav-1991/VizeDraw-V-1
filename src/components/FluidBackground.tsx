@@ -68,9 +68,18 @@ void main() {
 
 const SCALE = 0.45
 
+/**
+ * Phones and touch screens get a single still frame. A full-screen shader
+ * redrawn every frame forces the frosted sheets above it to re-blur on every
+ * frame, which made touch scrolling stutter. The field moves very slowly, so
+ * the still frame looks the same.
+ */
+const LITE_QUERY = '(hover: none), (pointer: coarse), (max-width: 760px)'
+
 export function FluidBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const reduced = useReducedMotion()
+  const reducedMotion = useReducedMotion()
+  const reduced = reducedMotion || window.matchMedia(LITE_QUERY).matches
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -108,8 +117,10 @@ export function FluidBackground() {
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      // A still field is sized to the tallest viewport (toolbar hidden).
+      const height = reduced ? Math.max(window.innerHeight, window.screen?.height || 0) : window.innerHeight
       canvas.width = Math.max(1, Math.round(window.innerWidth * dpr * SCALE))
-      canvas.height = Math.max(1, Math.round(window.innerHeight * dpr * SCALE))
+      canvas.height = Math.max(1, Math.round(height * dpr * SCALE))
       gl.viewport(0, 0, canvas.width, canvas.height)
       gl.uniform2f(uRes, canvas.width, canvas.height)
     }
@@ -160,7 +171,16 @@ export function FluidBackground() {
       window.addEventListener('pointermove', onMove, { passive: true })
       document.addEventListener('visibilitychange', onVisibility)
     }
+    // Mobile browsers resize the viewport as their toolbar shows and hides
+    // (notably near the bottom of a page). Re-allocating the canvas then
+    // stalls scrolling, so a still field only follows width changes, and
+    // never shrinks in height; the CSS stretches it to fill the screen.
+    let lastWidth = window.innerWidth
     const onResize = () => {
+      if (reduced) {
+        if (window.innerWidth === lastWidth) return
+        lastWidth = window.innerWidth
+      }
       resize()
       if (reduced) draw(performance.now())
     }

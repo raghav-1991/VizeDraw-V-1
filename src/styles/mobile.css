@@ -1,6 +1,31 @@
 /* Mobile refinements for phones and small tablets.
    Loaded last so these narrow-screen rules win over the desktop styles. */
 
+/* ---------- Smooth scrolling on phones and touch screens ----------
+   The background is a still frame here (FluidBackground.tsx), so the large
+   section sheets do not need a live backdrop blur: re-blurring a dozen
+   full-width layers every frame is what made touch scrolling stutter.
+   A slightly denser translucent fill reads the same over the soft field. */
+@media (hover: none), (pointer: coarse), (max-width: 760px) {
+  /* Sized to the tallest viewport so the toolbar showing or hiding near the
+     bottom of a page does not resize the background layer. */
+  .fluid-bg { bottom: auto; height: 100vh; height: 100lvh; }
+
+  .home-hero > .container::before,
+  .sheet-section > .container::before,
+  .band > .container::before,
+  .hero > .container::before,
+  .site-footer > .container::before {
+    background: var(--glass-sheen), rgba(255, 253, 249, 0.5);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  /* The specular glint follows the pointer on desktop; with no pointer to
+     follow, a fixed background only costs a repaint on every scroll frame. */
+  *, *::before, *::after { background-attachment: scroll !important; }
+}
+
 /* ---------- Touch targets (WCAG 2.5.8: at least 24 x 24px) ---------- */
 .site-footer__brand > a,
 .site-footer__col a,

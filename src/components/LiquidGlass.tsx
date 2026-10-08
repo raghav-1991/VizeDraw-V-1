@@ -9,12 +9,15 @@ import { useReducedMotion } from '../hooks/useReducedMotion'
 //  - a shared light position (--mx / --my on :root) that the specular glint
 //    on every glass surface follows, like iOS's highlights tracking motion.
 
+/** Touch screens: no pointer to follow, and the refraction filter is too heavy to run while scrolling. */
+const touchScreen = () => window.matchMedia('(hover: none), (pointer: coarse)').matches
+
 export function LiquidGlass() {
-  const reduced = useReducedMotion()
+  const reduced = useReducedMotion() || touchScreen()
 
   useEffect(() => {
     const brands = (navigator as Navigator & { userAgentData?: { brands: { brand: string }[] } }).userAgentData?.brands
-    if (brands?.some((b) => b.brand === 'Chromium')) document.documentElement.classList.add('lg-refract')
+    if (brands?.some((b) => b.brand === 'Chromium') && !touchScreen()) document.documentElement.classList.add('lg-refract')
     return () => document.documentElement.classList.remove('lg-refract')
   }, [])
 
