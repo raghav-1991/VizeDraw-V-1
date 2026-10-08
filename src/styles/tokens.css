@@ -1,0 +1,88 @@
+/* VizeDraw design tokens — the single source for colour, type and spacing.
+   "Drafting room" palette: architectural white and stone surfaces, graphite
+   type, precision-grey rules and one signal accent (Logo Teal). The
+   site is intentionally light only. */
+:root {
+  color-scheme: light;
+
+  /* Surfaces — warm architectural white through soft stone */
+  --paper: #f7f5f0;          /* architectural white (page) */
+  --paper-raised: #fdfcf9;   /* technical paper (sheets, panels) */
+  --paper-sunk: #efece5;     /* soft ivory / light concrete */
+  --stone: #e6e2d9;          /* soft stone */
+  --stone-2: #d9d4c8;
+  --night: #efece5;          /* legacy alias: former dark bands now sit on stone */
+  --night-raised: #fdfcf9;
+
+  /* Type */
+  --ink: #1d1f21;            /* deep graphite */
+  --ink-2: #45484b;
+  --ink-3: #6f716f;          /* technical grey */
+  --ink-4: #9a9a94;
+  --on-night: var(--ink);
+  --on-night-2: var(--ink-2);
+
+  /* Precision rules */
+  --rule: #e0dcd2;
+  --rule-strong: #c9c4b8;
+  --rule-ink: #1d1f21;
+  --rule-night: var(--rule);
+  --metal: #a7a59f;          /* brushed metal, used for fine instrument details */
+
+  /* Signal accent — used sparingly: CTAs, active states, measurements, changes */
+  --accent: #4fb6ba;
+  --accent-ink: #246e72;
+  --accent-soft: #e0f2f2;
+  --accent-wash: rgba(79, 182, 186, 0.08);
+
+  /* Legacy semantic names now map onto the single-accent system */
+  --revision: var(--accent);
+  --revision-soft: var(--accent-soft);
+  --redline: var(--accent);
+  --redline-soft: var(--accent-soft);
+  --pending: #8a6412;
+  --pending-soft: #f3ead2;
+  --ok: #4d7a5a;
+  --ok-soft: #e3ece2;
+
+  /* Type */
+  --font-display: 'Instrument Sans Variable', 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Instrument Sans Variable', 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.1875rem;
+  --text-xl: 1.4rem;
+  --text-2xl: clamp(1.7rem, 1.3rem + 1.3vw, 2.4rem);
+  --text-3xl: clamp(2.1rem, 1.4rem + 2.4vw, 3.4rem);
+  --text-4xl: clamp(2.6rem, 1.4rem + 4.4vw, 5.25rem);
+  --text-display: clamp(2.9rem, 1.2rem + 6vw, 6.6rem);
+
+  --measure: 66ch;
+  --measure-narrow: 50ch;
+
+  /* Space */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4rem;
+  --s-9: 6rem;
+  --section-y: clamp(4.5rem, 3rem + 5vw, 8rem);
+
+  --container: 1320px;
+  --gutter: clamp(16px, 4vw, 48px);
+  --header-h: 68px;
+
+  --radius: 2px;
+  --shadow-sheet: 0 1px 0 rgba(29, 31, 33, 0.04), 0 18px 40px -22px rgba(52, 44, 30, 0.28);
+  --shadow-table: 0 1px 0 rgba(29, 31, 33, 0.05), 0 40px 80px -40px rgba(52, 44, 30, 0.35);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-precise: cubic-bezier(0.65, 0, 0.35, 1);
+}

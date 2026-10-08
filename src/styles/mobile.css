@@ -1,0 +1,99 @@
+/* Mobile refinements for phones and small tablets.
+   Loaded last so these narrow-screen rules win over the desktop styles. */
+
+/* ---------- Touch targets (WCAG 2.5.8: at least 24 x 24px) ---------- */
+.site-footer__brand > a,
+.site-footer__col a,
+.site-footer__legal a,
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+@media (max-width: 760px), (pointer: coarse) {
+  /* Roomier rows for thumbs; the tighter gap keeps the footer from growing much. */
+  .site-footer__col ul { gap: 0; }
+  .site-footer__brand > a,
+  .site-footer__col a,
+  .site-footer__legal a { min-height: 40px; }
+  .site-footer__legal { gap: 0 var(--s-5); }
+  .crumbs ol { gap: 0; }
+  .crumbs a { min-height: 32px; }
+}
+
+/* ---------- Mobile menu: compact type ----------
+   Section names at half their former size (25.6px -> 12.8px), set as small
+   semibold capitals so they still read as headings; the links beneath them
+   step down to 14px. Rows keep their 48px toggle, so tap targets are unchanged. */
+.mnav__link {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variation-settings: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mnav__sub a { font-size: 0.875rem; }
+
+/* ---------- Buttons: full width on phones so labels stay on one line ---------- */
+@media (max-width: 560px) {
+  main .actions { flex-direction: column; flex-wrap: nowrap; align-items: stretch; width: 100%; justify-self: stretch; }
+  main .actions .btn { flex: none; width: 100%; justify-content: center; text-align: center; }
+}
+
+/* ---------- Pricing calculator: keep values like "1 × 1 TB" together ---------- */
+.calc__rows > div { flex-wrap: wrap; }
+.calc__rows dt { flex: 1 1 9rem; }
+.calc__rows dd { flex: 0 1 auto; margin-left: auto; }
+
+/* ---------- Contact: email addresses never break mid-word ---------- */
+@media (max-width: 480px) {
+  .contact__emails > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .contact__emails dd { font-size: var(--text-base); overflow-wrap: normal; }
+}
+
+/* ---------- Systems stack diagram (Compare, Company) ---------- */
+/* The VizeDraw panel is dark; its text must be light at every width
+   (the theme turned the old "night" text colour dark). */
+.stack__layer { color: #fff; }
+.stack__desc { color: rgba(255, 255, 255, 0.72); }
+
+@media (max-width: 480px) {
+  .stack { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .stack__systems { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stack__systems li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .stack__bracket { display: none; }
+}
+
+/* ---------- Homepage: systems strip and product picture at 320-400px ---------- */
+@media (max-width: 400px) {
+  .systems__row li { padding: 18px 14px 32px; }
+  .systems__row li::after { left: 14px; }
+  .systems__row li::before { left: 11px; }
+  .systems__row b { font-size: var(--text-lg); }
+
+  .wb__tools { min-width: 0; }
+  .wb__tool { min-width: 0; padding: 0 4px; font-size: 0.6875rem; }
+
+  /* Manufacturing handoff diagram: room for "Procurement". */
+  .handoff-stack { padding-inline: var(--s-3); }
+  .handoff-stack li { padding: 10px 8px; }
+}
+
+/* ---------- Wide tables scroll sideways on tablets ----------
+   The rounded glass frame clips overflow; between the stacked phone layout
+   (760px and below) and desktop, let the comparison tables scroll instead. */
+@media (min-width: 761px) {
+  .table-wrap,
+  .entitlements-wrap { overflow-x: auto; }
+}
+
+/* ---------- Small labels inside illustrations: at least 11px ---------- */
+.ws__meta dt { font-size: 0.6875rem; }
+
+@media (max-width: 720px) {
+  .wb__status-note,
+  .wb__synced { font-size: 0.6875rem; }
+}

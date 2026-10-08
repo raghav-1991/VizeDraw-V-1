@@ -1,0 +1,622 @@
+/* Liquid Glass — after Apple's iOS 26 material, over the fluid background.
+   A glass surface is: a real backdrop blur with boosted saturation, a curved
+   sheen, a bright specular rim, a soft inner "thickness" glow, a gentle drop
+   shadow and a glint that follows the pointer (--mx / --my, set by
+   LiquidGlass.tsx) across every surface at once. In Chromium the backdrop is
+   also refracted through an SVG displacement filter (html.lg-refract).
+   Shapes are capsules and concentric radii; presses are springy.
+
+   Glass is for controls and floating layers — header, menus, buttons,
+   segmented controls, tags, overlay cards and the frames that hold product
+   scenes. Drawings and body text stay solid and legible. */
+
+:root {
+  --glass-fill: rgba(255, 255, 255, 0.22);
+  --glass-fill-strong: rgba(255, 255, 255, 0.5);
+  --glass-blur: blur(16px) saturate(1.8) brightness(1.04);
+  --glass-blur-strong: blur(24px) saturate(1.9) brightness(1.05);
+  --glass-refract: url(#lg-refract) blur(10px) saturate(1.9) brightness(1.05);
+
+  /* Curved surface: bright upper-left, clear middle, a lift at the bottom edge. */
+  --glass-sheen: linear-gradient(165deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.14) 26%, rgba(255, 255, 255, 0) 52%, rgba(255, 255, 255, 0.16) 100%);
+  /* Pointer-tracked glint, in viewport space so all glass shares one light. */
+  --glass-glint: radial-gradient(360px circle at var(--mx, 30%) var(--my, 0px), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 62%);
+  --glass-glint-tint: radial-gradient(260px circle at var(--mx, 30%) var(--my, 0px), rgba(255, 236, 226, 0.32), rgba(255, 255, 255, 0) 60%);
+
+  --glass-rim:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0.5px rgba(255, 255, 255, 0.45),
+    inset 1px 0 0.5px rgba(255, 255, 255, 0.4),
+    inset -1px 0 0.5px rgba(255, 255, 255, 0.4),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.35);
+  --glass-thickness: inset 0 0 22px rgba(255, 255, 255, 0.28);
+  --glass-drop: 0 12px 34px -10px rgba(58, 42, 26, 0.22), 0 2px 8px -2px rgba(58, 42, 26, 0.10);
+  --glass-drop-lg: 0 24px 60px -18px rgba(58, 42, 26, 0.30), 0 4px 14px -4px rgba(58, 42, 26, 0.12);
+
+  --glass-radius: 28px;
+  --glass-radius-sm: 18px;
+  --capsule: 999px;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ---------- The material ---------- */
+.glass,
+.btn,
+.site-header__inner.container::before,
+.nav__panel,
+.mnav,
+.menu-button,
+.icon-button,
+.wb,
+.wb__tools,
+.inst__tab[aria-selected='true'],
+.inst__stage,
+.inst__seg,
+.inst-search,
+.xform,
+.xform__resolve-label,
+.ind-v,
+.ent__figure,
+.systems,
+.plan,
+.segmented,
+.figure__frame,
+.contact__form-wrap, .checklist__result, .record-card, .note-panel, .empty, .duo__item,
+.calc__panel, .addon, .entitlements-wrap,
+.conversation,
+.dialog {
+  background:
+    var(--glass-glint) fixed,
+    var(--glass-sheen),
+    var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 0 !important;
+  box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop);
+}
+
+/* Refraction on the surfaces where it reads best (Chromium). */
+.lg-refract :is(.nav__panel, .wb__tracing, .annot__item.glass, .closing__panel.glass, .xform__resolve-label, .wb__tools),
+.lg-refract .site-header__inner.container::before {
+  -webkit-backdrop-filter: var(--glass-refract);
+  backdrop-filter: var(--glass-refract);
+}
+
+/* Readability layers: menus, dialogs and overlay cards carry more frost. */
+.nav__panel, .mnav, .dialog, .wb__tracing, .contact__form-wrap {
+  background: var(--glass-glint) fixed, var(--glass-sheen), var(--glass-fill-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+}
+
+/* ---------- Buttons: capsules of glass, primary is tinted ---------- */
+.btn {
+  border-radius: var(--capsule);
+  color: var(--ink);
+  isolation: isolate;
+}
+.btn--primary {
+  color: var(--ink);
+  background:
+    var(--glass-glint-tint) fixed,
+    linear-gradient(165deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.08) 30%, rgba(255, 255, 255, 0) 55%, rgba(255, 255, 255, 0.14) 100%),
+    rgba(79, 182, 186, 0.9);
+  box-shadow:
+    inset 0 1px 0.5px rgba(222, 249, 250, 0.95),
+    inset 0 -1px 0.5px rgba(174, 229, 231, 0.5),
+    inset 0 0 18px rgba(142, 216, 219, 0.35),
+    0 10px 26px -10px rgba(36, 110, 114, 0.55),
+    0 2px 6px -2px rgba(36, 110, 114, 0.3);
+  text-shadow: none;
+}
+.btn--primary:hover { color: #fff; background-color: rgba(36, 110, 114, 0.92); }
+.btn--secondary:hover { color: var(--ink); background-color: rgba(255, 255, 255, 0.38); }
+.plan:not(.plan--pro) .btn--primary {
+  color: var(--ink);
+  text-shadow: none;
+  background: var(--glass-glint) fixed, var(--glass-sheen), rgba(255, 255, 255, 0.32);
+  box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop);
+}
+.plan:not(.plan--pro) .btn--primary:hover { color: #fff; }
+.site-header .btn--primary::after, .mnav .btn--primary::after { display: none; }
+
+/* Springy press: glass swells slightly under the finger, then settles. */
+@media (prefers-reduced-motion: no-preference) {
+  .btn, .menu-button, .icon-button, .wb__tool, .inst__tab, .segmented__opt span, .inst__seg button, .conversation {
+    transition: transform 0.45s var(--spring), background-color 0.25s, box-shadow 0.3s, color 0.2s;
+  }
+  .btn:hover { transform: translateY(-1px) scale(1.015); }
+  .btn:active, .menu-button:active, .icon-button:active, .wb__tool:active, .inst__seg button:active, .conversation:active { transform: scale(1.05); transition-duration: 0.15s; }
+}
+
+.menu-button { border-radius: var(--capsule); }
+.menu-button[aria-expanded='true'] { background-color: rgba(255, 255, 255, 0.45); }
+.icon-button { border-radius: 50%; }
+
+/* ---------- Header: a floating glass capsule ---------- */
+.site-header { background: transparent; border-bottom: 0; padding: 10px var(--gutter) 0; }
+/* The capsule's glass lives on ::before, a sibling layer rather than an
+   ancestor of the dropdowns: an element with backdrop-filter becomes the
+   backdrop root for its descendants, which would leave the dropdown panels
+   unable to see (and frost) the page behind them. */
+.site-header__inner.container {
+  position: relative;
+  isolation: isolate;
+  max-width: var(--container);
+  height: 58px;
+  padding-inline: 22px 8px;
+  background: none;
+}
+.site-header__inner.container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--capsule);
+  pointer-events: none;
+}
+.nav { border-left-color: rgba(29, 31, 33, 0.1); height: 30px; }
+.nav__link { height: 58px; }
+.nav__link::after { bottom: 12px; height: 2px; border-radius: 2px; }
+.nav__panel {
+  top: calc(100% + 6px);
+  padding: 8px;
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop-lg);
+}
+.nav__panel::before { top: -10px; height: 10px; }
+.nav__group li + li { border-top: 0; }
+.nav__panel-link { border-radius: var(--glass-radius-sm); }
+.nav__panel-link:hover { background: rgba(255, 255, 255, 0.45); box-shadow: var(--glass-rim); }
+.mnav { top: calc(var(--mnav-top) + 8px); inset-inline: var(--gutter); bottom: 12px; border-radius: var(--glass-radius); box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop-lg); }
+.mnav__item { border-color: rgba(29, 31, 33, 0.08); }
+.mnav__toggle { border-left-color: rgba(29, 31, 33, 0.08); }
+@media (prefers-reduced-motion: no-preference) {
+  .nav__panel:not([hidden]) { animation: glass-in 0.5s var(--spring) both; transform-origin: top left; }
+}
+@keyframes glass-in {
+  from { opacity: 0; transform: scale(0.94) translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (max-width: 480px) {
+  .site-header__inner.container { padding-inline: 16px 6px; gap: 8px; }
+  .site-header__actions { gap: 6px; }
+  .site-header .btn--small { padding: 8px 12px; }
+  .menu-button { width: 42px; height: 42px; padding: 0; justify-content: center; }
+  .menu-button span {
+    position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+}
+
+/* ---------- Hero ---------- */
+@media (min-width: 1240px) {
+  .annot__item.glass { padding: 10px 16px 11px; border-radius: var(--glass-radius-sm); }
+  .annot__item.glass::after { bottom: 50%; transform: translateY(50%); }
+  .annot__item--tl.glass::after, .annot__item--ml.glass::after, .annot__item--bl.glass::after { right: -14px; }
+  .annot__item--tr.glass::after, .annot__item--br.glass::after { left: -14px; }
+  .annot__item.glass::before { content: ''; position: absolute; top: 50%; width: 12px; height: 1px; background: var(--ink-3); }
+  .annot__item--tl.glass::before, .annot__item--ml.glass::before, .annot__item--bl.glass::before { right: -12px; }
+  .annot__item--tr.glass::before, .annot__item--br.glass::before { left: -12px; }
+  .annot__item--tl, .annot__item--ml, .annot__item--bl { padding-right: 16px !important; }
+  .annot__item--tr, .annot__item--br { padding-left: 16px !important; }
+}
+
+/* ---------- Workbench: the app floats in a glass slab ---------- */
+.wb { border-radius: 30px; padding: 8px; box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop-lg); }
+.wb__bar { border-bottom: 0; height: 54px; }
+.wb__body { border-radius: 22px; overflow: hidden; background: var(--paper-raised); box-shadow: 0 0 0 0.5px rgba(29, 31, 33, 0.08); }
+.wb__status { background: transparent; border-top: 0; height: 32px; }
+.wb__status span { border-right-color: rgba(29, 31, 33, 0.1); }
+.wb__tools { gap: 2px; padding: 4px; border-radius: var(--capsule); }
+.wb__tool { border: 0; border-radius: var(--capsule); height: 32px; padding: 0 12px; }
+.wb__tool:hover { background: rgba(255, 255, 255, 0.4); }
+.wb__tool[aria-pressed='true'] {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 50%), rgba(29, 31, 33, 0.86);
+  color: #fff;
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.35), 0 6px 14px -6px rgba(0, 0, 0, 0.45);
+}
+.wb__tool[aria-pressed='true'] kbd { border-color: rgba(255, 255, 255, 0.25); }
+.wb__people i { border-color: rgba(255, 255, 255, 0.7); }
+
+.wb__tracing {
+  position: absolute;
+  top: 40px;
+  right: 18px;
+  z-index: 2;
+  width: 214px;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px 10px;
+  pointer-events: none;
+  border-radius: 22px;
+  box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop-lg) !important;
+}
+.wb__tracing-k { font-family: var(--font-mono); font-size: 0.5625rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-ink); }
+.wb__tracing-t { font-size: 0.75rem; line-height: 1.35; color: var(--ink); }
+.wb__tracing dl { display: grid; grid-template-columns: 1fr 1fr; margin: 6px 0 0; padding: 6px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.45); box-shadow: inset 0 0 0 0.5px rgba(29, 31, 33, 0.08); }
+.wb__tracing dl div + div { padding-left: 8px; border-left: 1px solid rgba(29, 31, 33, 0.1); }
+.wb__tracing dt { font-family: var(--font-mono); font-size: 0.5rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
+.wb__tracing dd { margin: 0; font-family: var(--font-mono); font-size: 0.6875rem; color: var(--ink); }
+.wb__zoom.glass { border-radius: var(--capsule); padding: 0 4px; }
+.wb__zoom.glass b { border: 0; border-radius: var(--capsule); background: rgba(255, 255, 255, 0.5); }
+@media (prefers-reduced-motion: no-preference) {
+  /* Glass droplet forming: swell in and settle. */
+  .wb__tracing { animation: glass-drop 0.6s var(--spring) both; transform-origin: top right; }
+}
+@keyframes glass-drop {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 1; transform: none; }
+}
+@media (max-width: 720px) {
+  .wb { padding: 6px; border-radius: 24px; }
+  .wb__body { border-radius: 18px; }
+  .wb__tracing { top: 30px; right: 10px; width: 172px; padding: 9px 11px 8px; }
+  .wb__tracing-t { font-size: 0.6875rem; }
+}
+@media (max-width: 420px) { .wb__tracing dl { display: none; } }
+
+/* ---------- Capability index ---------- */
+.inst { border-top: 0; gap: clamp(1.25rem, 3vw, 2.5rem); }
+.inst__index { border-right: 0; gap: 6px; }
+.inst__tab { border: 0; border-radius: var(--glass-radius-sm); padding: 16px 18px 16px 14px; }
+.inst__tab::after { display: none; }
+.inst__tab:not([aria-selected='true']):hover { background: rgba(255, 255, 255, 0.25); }
+.inst__frame { padding-left: 0; }
+.inst__stage { border-radius: var(--glass-radius); padding: 8px; box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop-lg); }
+.inst__stage > * { border-radius: 21px; overflow: hidden; background: var(--paper-raised); box-shadow: 0 0 0 0.5px rgba(29, 31, 33, 0.08); }
+.inst__seg { gap: 2px; padding: 3px; border-radius: var(--capsule); }
+.inst__seg button { border-radius: var(--capsule); border: 0 !important; padding: 5px 12px; }
+.inst__seg button[aria-pressed='true'] { background: rgba(29, 31, 33, 0.86); box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.3); }
+.inst-search { border-radius: var(--capsule); padding-inline: 16px; }
+@media (max-width: 900px) {
+  .inst__index { gap: 4px; padding-bottom: 12px; border-bottom: 0; }
+  .inst__tab { padding: 10px 16px; border-radius: var(--capsule); }
+}
+
+/* ---------- Transformation ---------- */
+.xform { border-radius: 32px; overflow: hidden; }
+.xform__lane--before { background: none; }
+.xform__node {
+  border: 1px dashed rgba(29, 31, 33, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.28);
+}
+.xform__tag { border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.45); box-shadow: var(--glass-rim); }
+.xform__tag--accent { background: rgba(79, 182, 186, 0.9); color: var(--ink); box-shadow: inset 0 1px 0.5px rgba(222, 249, 250, 0.9), 0 6px 14px -6px rgba(36, 110, 114, 0.5); }
+.xform__resolve-label { border-radius: var(--capsule); padding: 8px 18px; }
+.xform__station { border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.6); color: var(--accent-ink); box-shadow: var(--glass-rim), 0 4px 10px -4px rgba(58, 42, 26, 0.25), 0 0 0 1.5px var(--accent); }
+.xform__line li:last-child .xform__station { background: rgba(79, 182, 186, 0.92); color: var(--ink); box-shadow: inset 0 1px 0.5px rgba(222, 249, 250, 0.9), 0 6px 14px -6px rgba(36, 110, 114, 0.55); }
+
+/* ---------- Scenes, figures, panels ---------- */
+.ind-v { border-radius: var(--glass-radius); padding: 8px; gap: 0; box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop-lg); }
+.ind-v > * { background-color: var(--paper-raised); }
+.ind-v > :first-child { border-radius: 21px 0 0 21px; }
+.ind-v > :last-child { border-radius: 0 21px 21px 0; }
+.ind-v__drawing { background: #efece5 !important; }
+.ind-v__tabs span { border-bottom: 0; margin: 4px; height: 34px; border-radius: var(--capsule); }
+.ind__flow li::before { border-radius: 50%; width: 9px; height: 9px; top: -5px; }
+@media (max-width: 640px) {
+  .ind-v > :first-child { border-radius: 21px 21px 0 0; }
+  .ind-v > :last-child { border-radius: 0 0 21px 21px; }
+}
+
+.ent__figure { border-radius: var(--glass-radius); }
+.schedule li { padding-inline: 12px; border-radius: var(--glass-radius-sm); transition: background-color 0.25s, box-shadow 0.25s; }
+.schedule li:hover { background: rgba(255, 255, 255, 0.3); box-shadow: var(--glass-rim); }
+.schedule__head { padding-inline: 12px; }
+
+.systems { border-radius: var(--glass-radius); overflow: hidden; }
+.systems__row li { border-right-color: rgba(29, 31, 33, 0.08); }
+.systems__layer { margin: 0 8px 8px; border-top: 0; border-radius: 20px; background: rgba(79, 182, 186, 0.1); box-shadow: inset 0 0 0 0.5px rgba(79, 182, 186, 0.3), inset 0 1px 0.5px rgba(255, 255, 255, 0.7); }
+
+/* ---------- Closing: a glass pane over a marked-up sheet ---------- */
+.closing__stage { position: relative; }
+.closing__panel.glass { position: relative; border-radius: 36px; box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop-lg); }
+.closing__panel.glass::before, .closing__panel.glass::after { display: none; }
+
+/* ---------- Interior pages ---------- */
+.plans { gap: 18px; border: 0; }
+.plan { border-radius: var(--glass-radius); }
+.plan--pro { box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop), inset 0 0 0 1.5px rgba(79, 182, 186, 0.55); }
+@media (max-width: 900px) { .plan { border-bottom: 0 !important; } }
+.segmented { gap: 2px; padding: 4px; border-radius: var(--capsule); }
+.segmented__opt span { border: 0 !important; border-radius: var(--capsule); }
+.segmented__opt input:checked + span { background: rgba(29, 31, 33, 0.86); box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.3); }
+.contact__form-wrap, .checklist__result, .record-card, .note-panel, .empty, .duo__item { border-radius: var(--glass-radius); }
+.calc__panel, .entitlements-wrap { border-radius: var(--glass-radius); overflow: hidden; }
+.addon { border-radius: var(--glass-radius-sm); }
+.calc__preset { border-radius: var(--capsule); }
+.figure__frame { border-radius: var(--glass-radius); padding: 8px; }
+.figure__frame > * { border-radius: 21px; overflow: hidden; }
+.conversation { border-radius: var(--glass-radius-sm); }
+.conversation[aria-pressed='true'] { box-shadow: var(--glass-rim), var(--glass-drop), inset 0 0 0 1.5px var(--accent); }
+.field input, .field select, .field textarea, .finder input[type='search'] {
+  border: 0;
+  border-radius: 14px;
+  background-color: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 0 0 0.5px rgba(29, 31, 33, 0.18), inset 0 1px 2px rgba(58, 42, 26, 0.08);
+}
+.finder input[type='search'] { border-radius: var(--capsule); }
+.field input:focus, .field select:focus, .field textarea:focus, .finder input[type='search']:focus {
+  background-color: rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 0 0 0.5px rgba(29, 31, 33, 0.18), 0 0 0 3px rgba(79, 182, 186, 0.35);
+}
+.field.has-error input, .field.has-error select, .field.has-error textarea { box-shadow: 0 0 0 2px var(--accent); }
+.check__box { border: 0; border-radius: 7px; background: rgba(255, 255, 255, 0.55); box-shadow: inset 0 0 0 0.5px rgba(29, 31, 33, 0.25); }
+.check input:checked + .check__box { background: rgba(79, 182, 186, 0.92); box-shadow: inset 0 1px 0.5px rgba(222, 249, 250, 0.9); }
+.outcome span { border: 0; border-radius: var(--capsule); background: rgba(255, 255, 255, 0.35); box-shadow: var(--glass-rim), var(--glass-drop); }
+.outcome input:checked + span { background: rgba(255, 255, 255, 0.7); box-shadow: var(--glass-rim), inset 0 0 0 1.5px var(--ok); }
+.dialog { border-radius: 32px; box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop-lg); }
+.dialog::backdrop { background: rgba(60, 50, 34, 0.18); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.dialog__key { border-left: 0; border-radius: 14px; }
+
+/* ---------- Fallbacks & accessibility ---------- */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass, .btn--secondary, .site-header__inner.container::before, .nav__panel, .mnav, .dialog, .wb, .inst__stage, .plan, .segmented {
+    background: rgba(250, 248, 243, 0.94);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .btn--secondary, .site-header__inner.container::before, .nav__panel, .mnav, .dialog, .wb, .wb__tools, .inst__stage,
+  .inst__seg, .inst-search, .xform, .ind-v, .ent__figure, .systems, .plan, .segmented, .figure__frame, .conversation,
+  .contact__form-wrap, .checklist__result, .record-card, .note-panel, .empty, .duo__item, .menu-button, .icon-button,
+  .calc__panel, .addon, .entitlements-wrap {
+    background: #f9f7f2 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+@media (forced-colors: active) {
+  .glass, .btn, .wb, .inst__stage, .inst__tab[aria-selected='true'], .ind-v, .xform, .systems, .plan, .segmented,
+  .field input, .field select, .field textarea, .dialog, .figure__frame, .site-header__inner.container::before {
+    border: 1px solid CanvasText !important;
+  }
+}
+@media print {
+  .glass, .btn, .wb, .plan { box-shadow: none !important; border: 1px solid #999 !important; backdrop-filter: none !important; }
+}
+
+/* The full-screen mobile menu covers busy content, so it carries the densest
+   frost; stray colour from what is underneath would read as a glitch. */
+.mnav {
+  background: var(--glass-sheen), rgba(250, 248, 243, 0.84);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  backdrop-filter: blur(30px) saturate(1.6);
+}
+
+/* ---------- Glass sheets: every section floats on the fluid ----------
+   Text never sits on raw fluid. Each section's content lives on a large
+   Liquid Glass sheet. The sheet is drawn on ::before — a sibling layer
+   behind the content, not an ancestor — so glass controls inside (buttons,
+   the product frame, cards) can still frost and refract the fluid. */
+:root { --sheet-pad: clamp(22px, 3.4vw, 56px); --sheet-gap: clamp(14px, 1.6vw, 22px); }
+
+.home-hero > .container,
+.sheet-section > .container,
+.band > .container,
+.hero > .container,
+.site-footer > .container {
+  position: relative;
+  isolation: isolate;
+  padding: var(--sheet-pad) calc(var(--gutter) + var(--sheet-pad));
+}
+.home-hero > .container::before,
+.sheet-section > .container::before,
+.band > .container::before,
+.hero > .container::before,
+.site-footer > .container::before {
+  content: '';
+  position: absolute;
+  inset: 0 var(--gutter);
+  z-index: -1;
+  border-radius: 40px;
+  pointer-events: none;
+  /* Thin frost: the fluid's colour glows through as a tint, like iOS glass
+     over a wallpaper, while the blur keeps it smooth enough for text. */
+  background: var(--glass-glint) fixed, var(--glass-sheen), rgba(255, 252, 246, 0.24);
+  -webkit-backdrop-filter: blur(28px) saturate(1.3);
+  backdrop-filter: blur(28px) saturate(1.3);
+  box-shadow: var(--glass-rim), inset 0 0 36px rgba(255, 255, 255, 0.22), var(--glass-drop-lg);
+}
+
+/* Sections become a stack of sheets with even gaps. */
+.sheet-section, .band, .hero, .closing { padding-block: var(--sheet-gap); background: none !important; border: 0 !important; }
+.home-hero { padding-top: calc(var(--sheet-gap) + 4px); }
+.home-hero > .container { margin-bottom: var(--sheet-gap); }
+main > .page > :first-child, main > :first-child { padding-top: calc(var(--sheet-gap) + 8px); }
+.site-footer { background: none !important; border: 0 !important; padding: var(--sheet-gap) 0 calc(var(--sheet-gap) + 8px); }
+
+/* Inside a sheet, rules are hairlines of the glass, not print rules. */
+.home-hero__rail { border: 0; background: rgba(255, 255, 255, 0.35); border-radius: var(--capsule); box-shadow: var(--glass-rim); }
+.home-hero__rail span { border-left-color: rgba(29, 31, 33, 0.08); }
+.home-hero__rail span:first-child { padding-left: 18px; }
+.home-hero__rail span:last-child { padding-right: 18px; }
+.home-hero__aside { border-top-color: rgba(29, 31, 33, 0.14); }
+.marker__rule { background: rgba(29, 31, 33, 0.16); }
+.marker__rule::after { background: rgba(29, 31, 33, 0.3); }
+.marker__n { display: inline-grid; place-items: center; min-width: 30px; height: 22px; padding: 0 8px; border-radius: var(--capsule); background: rgba(79, 182, 186, 0.1); box-shadow: inset 0 0 0 0.5px rgba(79, 182, 186, 0.3); }
+.industries, .ind, .faq, .faq__item, .link-rows, .link-rows li, .schedule, .schedule li, .schedule__head,
+.spine__section, .items--grid, .items--grid li, .sector-table, .sector-table li, .principles, .principles li,
+.matrix, .matrix__row, .roles li, .resources, .resources li, .finder, .site-footer__top, .site-footer__titleblock,
+.site-footer__titleblock span + span, .data-table th, .data-table td, .table-wrap, .steps li, .article__section {
+  border-color: rgba(29, 31, 33, 0.1) !important;
+}
+.table-wrap { background: rgba(255, 255, 255, 0.35); border-radius: 22px; overflow: hidden; }
+
+/* The hero product sits on the fluid itself — the drawing table. */
+.table { padding-block: clamp(2.5rem, 2rem + 2vw, 4rem) clamp(1rem, 1rem + 1vw, 2rem); overflow: visible; }
+.table__scale { display: none; }
+
+/* Closing keeps its own glass pane; no sheet behind it. */
+.closing > .container { padding-inline: var(--gutter); }
+
+/* Nested cards on a sheet: lighter drop so the layering stays calm. */
+.home-hero > .container .glass, .sheet-section .ind-v, .sheet-section .inst__stage, .sheet-section .xform,
+.sheet-section .systems, .sheet-section .ent__figure, .band .figure__frame, .hero .figure__frame, .plan {
+  --glass-drop-lg: 0 14px 34px -14px rgba(58, 42, 26, 0.26), 0 2px 8px -3px rgba(58, 42, 26, 0.1);
+}
+
+@media (max-width: 640px) {
+  :root { --sheet-pad: 20px; }
+  .home-hero > .container::before, .sheet-section > .container::before, .band > .container::before,
+  .hero > .container::before, .site-footer > .container::before { border-radius: 28px; inset: 0 10px; }
+  .home-hero > .container, .sheet-section > .container, .band > .container, .hero > .container, .site-footer > .container {
+    padding-inline: calc(10px + var(--sheet-pad));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .home-hero > .container::before, .sheet-section > .container::before, .band > .container::before,
+  .hero > .container::before, .site-footer > .container::before {
+    background: #f9f7f2; -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .home-hero > .container::before, .sheet-section > .container::before, .band > .container::before,
+  .hero > .container::before, .site-footer > .container::before { background: rgba(250, 248, 243, 0.92); }
+}
+
+/* ---------- Visual-first layout: fewer words, more air ---------- */
+.lead-title { max-width: 18ch; margin-bottom: clamp(1.75rem, 1.2rem + 2vw, 3rem); }
+.lead-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 32px; margin-bottom: clamp(1.75rem, 1.2rem + 2vw, 3rem); }
+.lead-row .lead-title { margin-bottom: 0; }
+.marker { margin-bottom: clamp(1.25rem, 1rem + 1vw, 2rem); }
+
+/* Industries, compact: statement + flow beside the scene. */
+.industries--compact .ind { padding-block: clamp(1.5rem, 1rem + 2vw, 2.75rem); }
+.industries--compact .ind__head { margin-bottom: clamp(1rem, 0.8rem + 1vw, 1.5rem); }
+.industries--compact .ind__statement { margin-bottom: var(--s-6); }
+.industries--compact .ind__flow { margin-top: 0; }
+
+/* Enterprise, compact: diagram + a grid of control chips. */
+.ent--compact { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: center; }
+.ent--compact .ent__figure { margin: 0; }
+.controls { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.controls li {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 56px; padding: 12px 18px;
+  border-radius: var(--glass-radius-sm);
+  font-size: 1rem; font-weight: 560; color: var(--ink);
+  background: var(--glass-glint) fixed, var(--glass-sheen), rgba(255, 255, 255, 0.3);
+  box-shadow: var(--glass-rim), 0 6px 16px -10px rgba(58, 42, 26, 0.3);
+}
+.controls__code { font-family: var(--font-mono); font-size: 0.625rem; font-weight: 500; color: var(--accent-ink); }
+@media (max-width: 960px) { .ent--compact { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .controls { grid-template-columns: minmax(0, 1fr); } }
+
+/* Closing: one line and two buttons. */
+.closing__panel.glass { align-items: center; }
+.closing__panel.glass h2 { max-width: none; }
+
+/* Before/after with labels only. */
+.xform__node { align-content: start; }
+.xform__lane-head { grid-template-columns: auto minmax(0, 1fr); margin-bottom: 18px; }
+
+/* ---------- Background clean-up ---------- */
+
+/* Glass inside a sheet does not re-frost and re-saturate the sheet's tint
+   (that produced blotchy yellow/orange patches). Nested surfaces are calm,
+   even panes of lighter glass instead. */
+:is(.home-hero, .sheet-section, .band, .hero, .site-footer) :is(
+  .inst__stage, .xform, .ind-v, .ent__figure, .systems, .figure__frame, .plan, .controls li,
+  .inst__tab[aria-selected='true'], .segmented, .inst__seg, .conversation, .contact__form-wrap,
+  .checklist__result, .record-card, .note-panel, .empty, .duo__item, .table-wrap,
+  .calc__panel, .addon, .entitlements-wrap
+) {
+  background: rgba(255, 255, 255, 0.42) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+:is(.home-hero, .sheet-section, .band, .hero) :is(.btn--secondary) {
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.xform__node, .xform__resolve-label { background: rgba(255, 255, 255, 0.5) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.systems__layer { background: rgba(79, 182, 186, 0.08); }
+
+/* Under the header: a progressive frosted fade, so content scrolling up
+   dissolves into the glass instead of showing crisply above the capsule. */
+.site-header { isolation: isolate; }
+.site-header::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 -26px;
+  z-index: -2;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(238, 230, 216, 0.7), rgba(238, 230, 216, 0));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .site-header::after { background: #e3f0f0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+/* Callout panels (e.g. Product boundaries) match the nested glass panes. */
+.spine__section--callout .spine__text {
+  border: 0 !important;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: var(--glass-rim), inset 3px 0 0 var(--accent), 0 10px 26px -16px rgba(58, 42, 26, 0.3);
+}
+
+/* Text-only rows are one line now, so they need less height. */
+.spine__section:not(.spine__section--visual):not(.spine__section--callout) { padding-block: clamp(1.5rem, 1rem + 1.5vw, 2.5rem); align-items: baseline; }
+.items--concise.items--grid li { padding: 20px 22px !important; }
+.items--concise .items__term { margin: 0; }
+
+/* Every closing panel is a glass pane, not only the ones marked .glass. */
+.closing__panel {
+  border: 0 !important;
+  border-radius: 36px;
+  background: var(--glass-glint) fixed, var(--glass-sheen), var(--glass-fill);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-rim), var(--glass-thickness), var(--glass-drop-lg);
+}
+.closing__panel::before, .closing__panel::after { display: none !important; }
+.lg-refract .closing__panel { -webkit-backdrop-filter: var(--glass-refract); backdrop-filter: var(--glass-refract); }
+
+/* ---------- VizeDraw logo, one line ---------- */
+.wordmark { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); line-height: 0; }
+.wordmark__mark { height: 36px; width: auto; flex: none; }
+.wordmark__type { height: 13px; width: auto; flex: none; }
+.wordmark__pencil { fill: var(--accent); stroke: var(--accent); }
+.site-footer .wordmark__mark { height: 42px; }
+.site-footer .wordmark__type { height: 15px; }
+@media (max-width: 480px) {
+  .wordmark { gap: 8px; }
+  .wordmark__mark { height: 30px; }
+  .wordmark__type { height: 11px; }
+}
+
+/* ---------- Numbers removed: markers, stations and steps become marks ---------- */
+.marker { grid-template-columns: auto minmax(0, 1fr); }
+.inst__tab { grid-template-columns: minmax(0, 1fr); padding-left: 18px; }
+.ind__head { grid-template-columns: auto minmax(0, 1fr); }
+.sol-index a { grid-template-columns: minmax(0, 1fr) auto; }
+.nav__panel-link { grid-template-columns: minmax(0, 1fr); }
+.xform__lane-head { grid-template-columns: minmax(0, 1fr); }
+.xform__station { width: 16px; height: 16px; margin: 6px 0 16px; }
+.xform__line::before { top: 12px; }
+.xform__line li:last-child .xform__station { width: 20px; height: 20px; margin-top: 4px; }
+.ind__flow span { display: none; }
+.steps__num { display: inline-block; width: 9px; height: 9px; margin-top: 0.55em; border-radius: 50%; background: var(--accent); }
+.schedule li { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr); }
+.schedule__head { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr); }
+.schedule__head span:first-child { display: none; }
+.controls li { justify-content: flex-start; }
+@media (max-width: 980px) {
+  .xform__line li { grid-template-columns: 16px minmax(0, 1fr); }
+  .xform__line::before { left: 7px; }
+}
+
+/* Match the supplied logo: teal symbol and VIZE, graphite DRAW. */
+.wordmark__mark { color: var(--accent); }
+.wordmark__type > g > :nth-child(-n + 8) { fill: var(--accent); }
